@@ -1,11 +1,37 @@
+# Render Blueprint for LingoScribe (video transcript generator)
+# Docs: https://render.com/docs/blueprint-spec
 services:
   - type: web
     name: lingo-scribe
     runtime: node
+
+    # Your GitHub repo (defaults to the repo containing this file).
+    repo: https://github.com/meermohsinali/video-transcript-generator.git
+
+    # Branch to deploy. Your branch is "main" (the spec default is "master"),
+    # so we set it explicitly to avoid deploying the wrong branch.
+    branch: main
+
+    # Singapore is the closest Render region to South Asia (Pakistan / India),
+    # which keeps audio upload and transcription latency low for your users.
+    # If your free workspace can't use Singapore, change this to: oregon
+    region: singapore
+
+    # Free instance type.
     plan: free
+
+    # Node 20 is a supported LTS release and matches your package engines (>=18).
     buildCommand: npm install
     startCommand: npm start
+
+    # Render uses this to confirm the service booted successfully.
     healthCheckPath: /api/health
+
+    # Push to "main" automatically triggers a new deploy (this is the default,
+    # but we set it explicitly so the behavior is clear).
+    autoDeployTrigger: on
+
     envVars:
       - key: NODE_VERSION
         value: "20"
+
