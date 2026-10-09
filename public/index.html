@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LingoScribe ...€” Hindi, Urdu &amp; English Video Transcript Generator</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <h1>LingoScribe</h1>
+      <p class="subtitle">Transcribe 30-minute videos or full-length audio in Hindi, Urdu, English, or mixed speech — then switch the finished transcript between English, Urdu, Roman Urdu, Hindi and Roman Hindi.</p>
+    </header>
+
+    <section class="card">
+      <form id="uploadForm" class="stack">
+        <label class="file">
+          <input id="fileInput" type="file" accept="video/mp4,video/x-matroska,audio/mp3,audio/wav,audio/m4a,video/quicktime,audio/ogg,audio/flac,audio/opus,video/webm,video/x-flv,video/avi,video/3gpp,audio/aac" />
+          <span class="file-label">Choose a video or audio file</span>
+        </label>
+        <p id="fileInfo" class="hint"></p>
+
+        <div class="field">
+          <label for="provider">Provider</label>
+          <select id="provider">
+            <option value="local">Local (faster-whisper, runs on this computer)</option>
+            <option value="gemini">Google Gemini (cloud)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="language">Language</label>
+          <select id="language">
+            <option value="auto">Auto / Mixed (Hindi + Urdu + English)</option>
+            <option value="hi">Hindi</option>
+            <option value="ur">Urdu</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div class="field" id="modelField">
+          <label for="model">Model</label>
+          <select id="model">
+            <option value="base">base — fastest local (English only; Urdu/Hindi often wrong)</option>
+            <option value="large-v3-turbo">large-v3-turbo — most accurate local Urdu/Hindi (VERY slow here)</option>
+            <option value="small">small — faster than turbo; Urdu/Hindi still unreliable</option>
+            <option value="tiny">tiny — fastest, least accurate (not for Urdu/Hindi)</option>
+            <option value="medium">medium</option>
+            <option value="large-v3">large-v3 — most accurate, extremely slow on this PC</option>
+          </select>
+          <p class="hint"><strong>Best for Urdu/Hindi:</strong> switch the provider to <strong>Google Gemini</strong> — it is fast and accurate. Local models are either fast-but-wrong (base/small) or correct-but-extremely-slow on this PC (large-v3-turbo ≈ 10+ hrs for 30 min).</p>
+        </div>
+
+        <div class="field" id="geminiField">
+          <label for="apiKey">Google Gemini API key</label>
+          <input id="apiKey" name="apiKey" type="password" autocomplete="off" placeholder="Paste your Gemini API key" />
+          <p class="hint">Used for Gemini transcription and for building the Urdu, Roman Urdu, Hindi and Roman Hindi versions. The key is never written to disk.</p>
+        </div>
+
+        <label class="check">
+          <input id="cloudConsent" type="checkbox" />
+          <span>I understand this sends my <strong>audio</strong> (cloud transcription) or my <strong>transcript text</strong> (language versions) to Google. <strong>Free tiers are limited</strong> and may improve Google products (<a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener">pricing</a>).</span>
+        </label>
+
+        <button id="submitBtn" type="submit" class="btn primary">Start Transcription</button>
+        <p id="formError" class="error-message" role="alert"></p>
+      </form>
+    </section>
+
+    <section id="jobSection" class="card hidden">
+      <div class="row">
+        <span id="jobId" class="job-id"></span>
+        <span id="jobStatus" class="status-badge">Queued</span>
+      </div>
+      <p id="jobMessage" class="message"></p>
+      <div class="progress">
+        <div id="progressBar" class="bar" style="width:0%"></div>
+      </div>
+      <p id="progressPercent" class="hint"></p>
+      <div class="row">
+        <button id="cancelButton" class="btn ghost" hidden>Cancel</button>
+        <button id="pollAgainButton" class="btn ghost" hidden>Retry</button>
+      </div>
+    </section>
+
+    <section id="resultSection" class="card hidden">
+      <div class="row">
+        <h2>Transcription</h2>
+        <span id="segmentCount" class="segment-count"></span>
+      </div>
+
+      <p class="hint">Detected language: <strong id="detectedLang">—</strong></p>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="transcript" role="tab">Transcript</button>
+        <button class="tab" data-tab="subtitles" role="tab">Subtitles</button>
+        <button class="tab" data-tab="segments" role="tab">Segments</button>
+      </div>
+
+      <div class="tabpanels">
+        <div class="tabpanel active" data-panel="transcript" id="transcriptPanel">
+          <button id="copyTextButton" class="btn ghost">Copy text</button>
+          <p id="transcriptText" class="transcript-text"></p>
+        </div>
+
+        <div class="tabpanel" data-panel="subtitles">
+          <p class="hint">Preview follows the language selected below. Use the download buttons at the bottom to save SRT or VTT in that language.</p>
+          <pre id="subtitlePreview" class="subtitle-preview"></pre>
+        </div>
+
+        <div class="tabpanel" data-panel="segments">
+          <div class="row">
+            <button id="saveEditsButton" class="btn ghost" hidden>Save edits</button>
+            <span class="hint">Edits apply to the original transcript. Language versions are rebuilt from it.</span>
+          </div>
+          <ul id="segmentList" class="segments"></ul>
+        </div>
+      </div>
+
+      <div class="lang-block">
+        <span class="lang-label">Show &amp; download in</span>
+        <div class="lang-bar" role="group" aria-label="Transcript language">
+          <button id="langOriginal" class="lang-btn" data-lang="original" hidden>Original</button>
+          <button class="lang-btn active" data-lang="en">English</button>
+          <button class="lang-btn" data-lang="ur">Urdu <span class="lang-sample" dir="rtl">(کیسے ہو؟)</span></button>
+          <button class="lang-btn" data-lang="ur_roman">Roman Urdu <span class="lang-sample">(kese ho)</span></button>
+          <button class="lang-btn" data-lang="hi">Hindi <span class="lang-sample">(केसे हो)</span></button>
+          <button class="lang-btn" data-lang="hi_roman">Roman Hindi <span class="lang-sample">(kaise ho)</span></button>
+        </div>
+        <p id="langStatus" class="hint"></p>
+      </div>
+
+      <div class="row export-row">
+        <button id="exportTxt" class="btn ghost" disabled>Download TXT</button>
+        <button id="exportSrt" class="btn ghost" disabled>Download SRT</button>
+        <button id="exportVtt" class="btn ghost" disabled>Download VTT</button>
+        <button id="copyBottomButton" class="btn ghost" disabled>Copy text</button>
+      </div>
+    </section>
+
+    <section id="errorBanner" class="error-banner hidden" role="alert">
+      <span id="errorText"></span>
+    </section>
+
+    <footer class="app-footer">
+      <p id="healthMessage" class="hint"></p>
+      <p>Local processing keeps your files private, except for Google Gemini mode which sends audio to Google.</p>
+      <div class="footer-links">
+        <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener">Gemini pricing</a>
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini API key</a>
+        <a href="/setup-local.ps1">Local setup</a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

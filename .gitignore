@@ -1,0 +1,16 @@
+node_modules/
+data/*.json
+*.log
+*.err
+.DS_Store
+Thumbs.db
+uploads/*
+!uploads/.gitkeep
+tmp/*
+!tmp/.gitkeep
+__pycache__/
+*.pyc
+venv/
+.venv/
+.vercel
+.vscode/
