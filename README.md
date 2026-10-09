@@ -1,3 +1,14 @@
+---
+title: LingoScribe
+emoji: 🎬
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
+
 # LingoScribe — Video / Audio Transcript Generator
 
 Upload a video or audio file and get an accurate transcript in **English, Urdu (Nastaliq), Roman Urdu, Hindi (Devanagari), Roman Hindi**. Each language version is generated on demand with a single click and can be downloaded as **TXT / SRT / VTT**.
@@ -50,14 +61,36 @@ set GEMINI_LOCAL_PYTHON=<path-to-venv-python>   # optional
 No environment variables or secrets are required on the server — the Gemini API
 key is entered in the browser and never stored on disk.
 
-### Option B — Railway (Docker: local + Gemini)
-This builds `Dockerfile` (Node + Python + ffmpeg + faster-whisper), so the
-**local** engine also works in the cloud. Requires a plan with enough RAM
+### Option B — Hugging Face Spaces (free, NO credit card, Gemini engine) ⭐
+This is the easiest **truly free** host — no card, no verification. It builds the
+root `Dockerfile` (Node only), so the **Google Gemini** engine works in the cloud.
+(The local faster-whisper engine is not in this image — it needs heavy Python +
+ffmpeg + a large model; see Option C for that.)
+
+1. Push this repo to GitHub (already done).
+2. Go to https://huggingface.co → your profile → **+ New** → **Space**.
+3. **Space name:** anything (e.g. `lingo-scribe`). **License:** `mit`.
+   **SDK:** **Docker** (blank). **Hardware:** **CPU basic (free)**. Visibility: **Public**.
+4. **Create Space**, then in the Space → **Settings** → point it at this repo, OR
+   simply push this repo to the Space's git URL:
+   ```bash
+   git remote add space https://huggingface.co/spaces/<your-username>/<space-name>
+   git push space main
+   ```
+5. Wait for the build, then open the **App** tab → your live link:
+   `https://<your-username>-<space-name>.hf.space`
+
+No environment variables or secrets are needed — the Gemini API key is typed in
+the browser and never stored on the server.
+
+### Option C — Railway (Docker: local + Gemini, full engine)
+This builds **`Dockerfile.full`** (Node + Python + ffmpeg + faster-whisper), so
+the **local** engine also works in the cloud. Requires a plan with enough RAM
 (large-v3-turbo needs ~2–3 GB).
 
 1. Push this repo to GitHub.
 2. https://railway.com → **New Project** → **Deploy from GitHub** → pick this repo.
-3. Railway detects the `Dockerfile` and builds it automatically.
+3. In Railway settings set **Dockerfile Path** to `Dockerfile.full` and build it.
 4. Open the generated `https://…up.railway.app` link.
 
 ---
